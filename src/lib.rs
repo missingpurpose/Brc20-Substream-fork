@@ -311,9 +311,9 @@ fn graph_out(
             .create_row("Deploy", deploy.id.clone())
             .set("token", deploy.symbol.clone())
             .set("deployer", deploy.deployer.clone())
-            .set("timestamp", clock.number.clone())
+            .set("block", clock.number.clone())
             .set(
-                "block",
+                "timestamp",
                 clock
                     .timestamp
                     .as_ref()
