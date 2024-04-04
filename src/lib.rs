@@ -45,7 +45,8 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
             match parse_inscriptions(&tx) {
                 Ok(inscriptions) => inscriptions
                     .into_iter()
-                    .filter(|inscription| {
+                    .enumerate()
+                    .filter(|(_, inscription)| {
                         match inscription
                             .content_type()
                             .map(|ctype| ctype.split(";"))
@@ -57,7 +58,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
                             None => false,
                         }
                     })
-                    .filter_map(|inscription| {
+                    .filter_map(|(i, inscription)| {
                         let (vout, offset) = tx.nth_sat_utxo(inscription.pointer().unwrap_or(0))?;
                         Some((
                             Location {
@@ -65,6 +66,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
                                 offset,
                                 utxo_amount: btc_to_sats(vout.value),
                             },
+                            format!("{}i{}", tx.txid, i),
                             vout.address(),
                             inscription,
                         ))
@@ -76,7 +78,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
                 }
             }
         })
-        .filter_map(|(location, address, inscription)| {
+        .filter_map(|(location, inscription_id, address, inscription)| {
             let content = if let Ok(content) =
                 String::from_utf8(inscription.body().unwrap_or_default().to_vec())
             {
@@ -86,7 +88,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
             };
 
             match serde_json::from_str::<Brc20Event>(&content) {
-                Ok(event) if event.valid() => Some((location, address, event)),
+                Ok(event) if event.valid() => Some((location, inscription_id, address, event)),
                 Ok(_) => None,
                 Err(err) => {
                     substreams::log::info!(
@@ -103,9 +105,9 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
     Ok(Brc20Events {
         deploys: events
             .iter()
-            .filter_map(|(_, address, event)| match (address, event) {
+            .filter_map(|(_, inscription_id, address, event)| match (address, event) {
                 (Some(address), Brc20Event::Deploy(deploy)) => Some(Deploy {
-                    id: "".into(),
+                    id: format!("{}:DEPLOY:{}", deploy.tick(), inscription_id),
                     symbol: deploy.tick(),
                     max_supply: deploy.max.to_string(),
                     mint_limit: deploy.lim().to_string(),
@@ -117,9 +119,9 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
             .collect(),
         mints: events
             .iter()
-            .filter_map(|(_, address, event)| match (address, event) {
+            .filter_map(|(_, inscription_id, address, event)| match (address, event) {
                 (Some(address), Brc20Event::Mint(mint)) => Some(Mint {
-                    id: "".into(),
+                    id: format!("{}:MINT:{}", mint.tick(), inscription_id),
                     token: mint.tick(),
                     to: address.into(),
                     amount: mint.amt.to_string(),
@@ -129,9 +131,9 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
             .collect(),
         inscribed_transfers: events
             .iter()
-            .filter_map(|(location, address, event)| match (address, event) {
+            .filter_map(|(location, inscription_id, address, event)| match (address, event) {
                 (Some(address), Brc20Event::Transfer(transfer)) => Some(InscribedTransfer {
-                    id: "".into(),
+                    id: format!("{}:INSCRIBE_TRANSFER:{}", transfer.tick(), inscription_id),
                     token: transfer.tick(),
                     // to: "".into(),
                     from: address.into(),
@@ -335,7 +337,16 @@ fn graph_out(
             .create_row("Mint", mint.id.clone())
             .set("token", mint.token.clone())
             .set("to", mint.to.clone())
-            .set_bigint("amount", &mint.amount);
+            .set_bigint("amount", &mint.amount)
+            .set("block", clock.number.clone())
+            .set(
+                "timestamp",
+                clock
+                    .timestamp
+                    .as_ref()
+                    .map(|t| t.seconds)
+                    .unwrap_or_default(),
+            );
     });
 
     events.executed_transfers.iter().for_each(|transfer| {
@@ -344,7 +355,16 @@ fn graph_out(
             .set("token", transfer.token.clone())
             .set("from", transfer.from.clone())
             .set("to", transfer.to.clone())
-            .set_bigint("amount", &transfer.amount);
+            .set_bigint("amount", &transfer.amount)
+            .set("block", clock.number.clone())
+            .set(
+                "timestamp",
+                clock
+                    .timestamp
+                    .as_ref()
+                    .map(|t| t.seconds)
+                    .unwrap_or_default(),
+            );
     });
 
     balances_store
