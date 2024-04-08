@@ -35,17 +35,21 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
     let events = block
         .tx
         .into_iter()
-        // Filter if tx data contains "text/plain;charset=utf-8" inscriptions
+        // Filter if tx data contains "text/plain" or "application/json" hex string for efficiency
         .filter(|tx| {
             tx.hex
-                .contains("746578742f706c61696e3b636861727365743d7574662d38")
+                .contains("746578742f706c61696e") // "text/plain"
+            || tx.hex
+            .contains("6170706C69636174696F6E2F6A736F6E") // "application/json"
         })
         .flat_map(|tx| {
             let txid = tx.txid.clone();
             match parse_inscriptions(&tx) {
                 Ok(inscriptions) => inscriptions
                     .into_iter()
-                    .filter(|inscription| {
+                    .enumerate()
+                    .filter(|(_, inscription)| {
+                        // substreams::log::info!("Parsing inscription {txid}: {:?}", String::from_utf8(inscription.body().unwrap_or_default().to_vec()));
                         match inscription
                             .content_type()
                             .map(|ctype| ctype.split(";"))
@@ -57,7 +61,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
                             None => false,
                         }
                     })
-                    .filter_map(|inscription| {
+                    .filter_map(|(i, inscription)| {
                         let (vout, offset) = tx.nth_sat_utxo(inscription.pointer().unwrap_or(0))?;
                         Some((
                             Location {
@@ -65,6 +69,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
                                 offset,
                                 utxo_amount: btc_to_sats(vout.value),
                             },
+                            format!("{}i{}", tx.txid, i),
                             vout.address(),
                             inscription,
                         ))
@@ -76,7 +81,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
                 }
             }
         })
-        .filter_map(|(location, address, inscription)| {
+        .filter_map(|(location, inscription_id, address, inscription)| {
             let content = if let Ok(content) =
                 String::from_utf8(inscription.body().unwrap_or_default().to_vec())
             {
@@ -86,7 +91,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
             };
 
             match serde_json::from_str::<Brc20Event>(&content) {
-                Ok(event) if event.valid() => Some((location, address, event)),
+                Ok(event) if event.valid() => Some((location, inscription_id, address, event)),
                 Ok(_) => None,
                 Err(err) => {
                     substreams::log::info!(
@@ -103,45 +108,51 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
     Ok(Brc20Events {
         deploys: events
             .iter()
-            .filter_map(|(_, address, event)| match (address, event) {
-                (Some(address), Brc20Event::Deploy(deploy)) => Some(Deploy {
-                    id: "".into(),
-                    symbol: deploy.tick(),
-                    max_supply: deploy.max.to_string(),
-                    mint_limit: deploy.lim().to_string(),
-                    decimals: deploy.dec(),
-                    deployer: address.clone(),
-                }),
-                _ => None,
-            })
+            .filter_map(
+                |(_, inscription_id, address, event)| match (address, event) {
+                    (Some(address), Brc20Event::Deploy(deploy)) => Some(Deploy {
+                        id: format!("{}:DEPLOY:{}", deploy.tick(), inscription_id),
+                        symbol: deploy.tick(),
+                        max_supply: deploy.max.to_string(),
+                        mint_limit: deploy.lim().to_string(),
+                        decimals: deploy.dec(),
+                        deployer: address.clone(),
+                    }),
+                    _ => None,
+                },
+            )
             .collect(),
         mints: events
             .iter()
-            .filter_map(|(_, address, event)| match (address, event) {
-                (Some(address), Brc20Event::Mint(mint)) => Some(Mint {
-                    id: "".into(),
-                    token: mint.tick(),
-                    to: address.into(),
-                    amount: mint.amt.to_string(),
-                }),
-                _ => None,
-            })
+            .filter_map(
+                |(_, inscription_id, address, event)| match (address, event) {
+                    (Some(address), Brc20Event::Mint(mint)) => Some(Mint {
+                        id: format!("{}:MINT:{}", mint.tick(), inscription_id),
+                        token: mint.tick(),
+                        to: address.into(),
+                        amount: mint.amt.to_string(),
+                    }),
+                    _ => None,
+                },
+            )
             .collect(),
         inscribed_transfers: events
             .iter()
-            .filter_map(|(location, address, event)| match (address, event) {
-                (Some(address), Brc20Event::Transfer(transfer)) => Some(InscribedTransfer {
-                    id: "".into(),
-                    token: transfer.tick(),
-                    // to: "".into(),
-                    from: address.into(),
-                    amount: transfer.amt.to_string(),
-                    utxo: location.utxo.clone(),
-                    offset: location.offset,
-                    utxo_amount: location.utxo_amount,
-                }),
-                _ => None,
-            })
+            .filter_map(
+                |(location, inscription_id, address, event)| match (address, event) {
+                    (Some(address), Brc20Event::Transfer(transfer)) => Some(InscribedTransfer {
+                        id: format!("{}:TRANSFER:{}", transfer.tick(), inscription_id),
+                        token: transfer.tick(),
+                        // to: "".into(),
+                        from: address.into(),
+                        amount: transfer.amt.to_string(),
+                        utxo: location.utxo.clone(),
+                        offset: location.offset,
+                        utxo_amount: location.utxo_amount,
+                    }),
+                    _ => None,
+                },
+            )
             .collect(),
         executed_transfers: vec![],
     })
@@ -311,9 +322,9 @@ fn graph_out(
             .create_row("Deploy", deploy.id.clone())
             .set("token", deploy.symbol.clone())
             .set("deployer", deploy.deployer.clone())
-            .set("timestamp", clock.number.clone())
+            .set("block", clock.number.clone())
             .set(
-                "block",
+                "timestamp",
                 clock
                     .timestamp
                     .as_ref()
@@ -335,7 +346,16 @@ fn graph_out(
             .create_row("Mint", mint.id.clone())
             .set("token", mint.token.clone())
             .set("to", mint.to.clone())
-            .set_bigint("amount", &mint.amount);
+            .set_bigint("amount", &mint.amount)
+            .set("block", clock.number.clone())
+            .set(
+                "timestamp",
+                clock
+                    .timestamp
+                    .as_ref()
+                    .map(|t| t.seconds)
+                    .unwrap_or_default(),
+            );
     });
 
     events.executed_transfers.iter().for_each(|transfer| {
@@ -344,7 +364,16 @@ fn graph_out(
             .set("token", transfer.token.clone())
             .set("from", transfer.from.clone())
             .set("to", transfer.to.clone())
-            .set_bigint("amount", &transfer.amount);
+            .set_bigint("amount", &transfer.amount)
+            .set("block", clock.number.clone())
+            .set(
+                "timestamp",
+                clock
+                    .timestamp
+                    .as_ref()
+                    .map(|t| t.seconds)
+                    .unwrap_or_default(),
+            );
     });
 
     balances_store

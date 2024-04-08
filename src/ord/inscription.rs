@@ -1,3 +1,4 @@
+// Implementation from the https://github.com/ordinals/ord project
 use bitcoin::{hashes::Hash, Txid};
 
 use super::inscription_id::InscriptionId;

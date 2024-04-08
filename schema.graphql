@@ -30,7 +30,7 @@ type AccountBalance @entity {
 
 # Events
 type Deploy @entity {
-    # ID is "{SYMBOL}:DEPLOY"
+    # ID is "{SYMBOL}:DEPLOY:{INSCRIPION_ID}"
     id: ID!
     token: Token!
     deployer: Account!
@@ -39,27 +39,33 @@ type Deploy @entity {
 }
 
 type Mint @entity {
-    # ID is "{SYMBOL}:MINT:{INDEX}"
+    # ID is "{SYMBOL}:MINT:{INSCRIPION_ID}"
     id: ID!
     token: Token!
     to: String!
     amount: BigInt!
+    timestamp: BigInt!
+    block: BigInt!
 }
 
 type InscribeTransfer @entity {
-    # ID is "{SYMBOL}:INSCRIBE_TRANSFER:{INDEX}"
+    # ID is "{SYMBOL}:TRANSFER:{INSCRIPION_ID}"
     id: ID!
     token: Token!
     to: String!
     amount: BigInt!
+    timestamp: BigInt!
+    block: BigInt!
 }
 
 type Transfer @entity {
-    # ID is "{SYMBOL}:TRANSFER:{INDEX}"
+    # ID is "{SYMBOL}:TRANSFER:{INSCRIPION_ID}"
     id: ID!
     token: Token!
     from: String!
     to: String!
     amount: BigInt!
+    timestamp: BigInt!
+    block: BigInt!
 }
 
