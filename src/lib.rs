@@ -35,10 +35,12 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
     let events = block
         .tx
         .into_iter()
-        // Filter if tx data contains "text/plain;charset=utf-8" inscriptions
+        // Filter if tx data contains "text/plain" or "application/json" hex string for efficiency
         .filter(|tx| {
             tx.hex
-                .contains("746578742f706c61696e3b636861727365743d7574662d38")
+                .contains("746578742f706c61696e") // "text/plain"
+            || tx.hex
+            .contains("6170706C69636174696F6E2F6A736F6E") // "application/json"
         })
         .flat_map(|tx| {
             let txid = tx.txid.clone();
@@ -47,6 +49,7 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
                     .into_iter()
                     .enumerate()
                     .filter(|(_, inscription)| {
+                        // substreams::log::info!("Parsing inscription {txid}: {:?}", String::from_utf8(inscription.body().unwrap_or_default().to_vec()));
                         match inscription
                             .content_type()
                             .map(|ctype| ctype.split(";"))
@@ -105,45 +108,51 @@ fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors
     Ok(Brc20Events {
         deploys: events
             .iter()
-            .filter_map(|(_, inscription_id, address, event)| match (address, event) {
-                (Some(address), Brc20Event::Deploy(deploy)) => Some(Deploy {
-                    id: format!("{}:DEPLOY:{}", deploy.tick(), inscription_id),
-                    symbol: deploy.tick(),
-                    max_supply: deploy.max.to_string(),
-                    mint_limit: deploy.lim().to_string(),
-                    decimals: deploy.dec(),
-                    deployer: address.clone(),
-                }),
-                _ => None,
-            })
+            .filter_map(
+                |(_, inscription_id, address, event)| match (address, event) {
+                    (Some(address), Brc20Event::Deploy(deploy)) => Some(Deploy {
+                        id: format!("{}:DEPLOY:{}", deploy.tick(), inscription_id),
+                        symbol: deploy.tick(),
+                        max_supply: deploy.max.to_string(),
+                        mint_limit: deploy.lim().to_string(),
+                        decimals: deploy.dec(),
+                        deployer: address.clone(),
+                    }),
+                    _ => None,
+                },
+            )
             .collect(),
         mints: events
             .iter()
-            .filter_map(|(_, inscription_id, address, event)| match (address, event) {
-                (Some(address), Brc20Event::Mint(mint)) => Some(Mint {
-                    id: format!("{}:MINT:{}", mint.tick(), inscription_id),
-                    token: mint.tick(),
-                    to: address.into(),
-                    amount: mint.amt.to_string(),
-                }),
-                _ => None,
-            })
+            .filter_map(
+                |(_, inscription_id, address, event)| match (address, event) {
+                    (Some(address), Brc20Event::Mint(mint)) => Some(Mint {
+                        id: format!("{}:MINT:{}", mint.tick(), inscription_id),
+                        token: mint.tick(),
+                        to: address.into(),
+                        amount: mint.amt.to_string(),
+                    }),
+                    _ => None,
+                },
+            )
             .collect(),
         inscribed_transfers: events
             .iter()
-            .filter_map(|(location, inscription_id, address, event)| match (address, event) {
-                (Some(address), Brc20Event::Transfer(transfer)) => Some(InscribedTransfer {
-                    id: format!("{}:INSCRIBE_TRANSFER:{}", transfer.tick(), inscription_id),
-                    token: transfer.tick(),
-                    // to: "".into(),
-                    from: address.into(),
-                    amount: transfer.amt.to_string(),
-                    utxo: location.utxo.clone(),
-                    offset: location.offset,
-                    utxo_amount: location.utxo_amount,
-                }),
-                _ => None,
-            })
+            .filter_map(
+                |(location, inscription_id, address, event)| match (address, event) {
+                    (Some(address), Brc20Event::Transfer(transfer)) => Some(InscribedTransfer {
+                        id: format!("{}:TRANSFER:{}", transfer.tick(), inscription_id),
+                        token: transfer.tick(),
+                        // to: "".into(),
+                        from: address.into(),
+                        amount: transfer.amt.to_string(),
+                        utxo: location.utxo.clone(),
+                        offset: location.offset,
+                        utxo_amount: location.utxo_amount,
+                    }),
+                    _ => None,
+                },
+            )
             .collect(),
         executed_transfers: vec![],
     })
