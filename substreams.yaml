@@ -1,15 +1,28 @@
 specVersion: v0.1.0
 package:
+<<<<<<< HEAD
   name: bitcoin-cap-table
+=======
+  name: cap_table_substreams
+>>>>>>> 0e6ab0d1b3e5365ae7cc9595fd97694521c5461e
   version: v0.1.0
+  image: assets/logo.png
 
 imports:
   bitcoin: https://github.com/streamingfast/firehose-bitcoin/releases/download/v1.0.0-rc.1/bitcoin-v1.0.0.spkg
   graph: https://github.com/streamingfast/substreams-sink-subgraph/releases/download/v0.1.0/substreams-sink-subgraph-protodefs-v0.1.0.spkg
+<<<<<<< HEAD
 
 protobuf:
   files:
     - cap_table.proto
+=======
+  entity: https://github.com/streamingfast/substreams-entity-change/releases/download/v1.1.0/substreams-entity-change-v1.1.0.spkg
+
+protobuf:
+  files:
+    - bitcoin.proto
+>>>>>>> 0e6ab0d1b3e5365ae7cc9595fd97694521c5461e
   importPaths:
     - ./proto
 
@@ -19,10 +32,37 @@ binaries:
     file: ./target/wasm32-unknown-unknown/release/substreams.wasm
 
 modules:
+<<<<<<< HEAD
   - name: map_address_balances
+=======
+  - name: map_cap_table
+>>>>>>> 0e6ab0d1b3e5365ae7cc9595fd97694521c5461e
     kind: map
-    initialBlock: 779830
+    initialBlock: 84965
     inputs:
       - source: sf.bitcoin.type.v1.Block
     output:
+<<<<<<< HEAD
       type: proto:btc.cap_table.v1.CapTable
+=======
+      type: proto:bitcoin.v1.CapTable
+
+  - name: store_cap_table
+    kind: store
+    initialBlock: 84965
+    updatePolicy: set
+    valueType: proto:bitcoin.v1.CapTableEntry
+    inputs:
+      - map: map_cap_table
+
+  - name: graph_out
+    kind: map
+    initialBlock: 84965
+    inputs:
+      - source: sf.substreams.v1.Clock
+      - map: map_cap_table
+      - store: store_cap_table
+        mode: deltas
+    output:
+      type: proto:sf.substreams.entity.v1.EntityChanges
+>>>>>>> 0e6ab0d1b3e5365ae7cc9595fd97694521c5461e
