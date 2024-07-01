@@ -1,0 +1,11 @@
+C:\Users\glong\OneDrive\Documents\programming\Brc20 substream fork\brc20-substreams\target\debug\deps\libprost-dd279597e624e60b.rmeta: C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\lib.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\error.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\message.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\name.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\types.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\encoding.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\../README.md
+
+C:\Users\glong\OneDrive\Documents\programming\Brc20 substream fork\brc20-substreams\target\debug\deps\prost-dd279597e624e60b.d: C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\lib.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\error.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\message.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\name.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\types.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\encoding.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\../README.md
+
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\lib.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\error.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\message.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\name.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\types.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\encoding.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.12.6\src\../README.md:

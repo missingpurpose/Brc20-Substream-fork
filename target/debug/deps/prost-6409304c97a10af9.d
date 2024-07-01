@@ -1,0 +1,10 @@
+C:\Users\glong\OneDrive\Documents\programming\Brc20 substream fork\brc20-substreams\target\debug\deps\libprost-6409304c97a10af9.rmeta: C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\lib.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\error.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\message.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\types.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\encoding.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\../README.md
+
+C:\Users\glong\OneDrive\Documents\programming\Brc20 substream fork\brc20-substreams\target\debug\deps\prost-6409304c97a10af9.d: C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\lib.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\error.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\message.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\types.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\encoding.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\../README.md
+
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\lib.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\error.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\message.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\types.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\encoding.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\prost-0.11.3\src\../README.md:

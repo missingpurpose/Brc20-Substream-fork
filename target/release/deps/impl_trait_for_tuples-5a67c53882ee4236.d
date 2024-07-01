@@ -1,0 +1,8 @@
+C:\Users\glong\OneDrive\Documents\programming\Brc20 substream fork\brc20-substreams\target\release\deps\impl_trait_for_tuples-5a67c53882ee4236.dll: C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\lib.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\full_automatic.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\semi_automatic.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\utils.rs
+
+C:\Users\glong\OneDrive\Documents\programming\Brc20 substream fork\brc20-substreams\target\release\deps\impl_trait_for_tuples-5a67c53882ee4236.d: C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\lib.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\full_automatic.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\semi_automatic.rs C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\utils.rs
+
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\lib.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\full_automatic.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\semi_automatic.rs:
+C:\Users\glong\.cargo\registry\src\index.crates.io-6f17d22bba15001f\impl-trait-for-tuples-0.2.2\src\utils.rs:

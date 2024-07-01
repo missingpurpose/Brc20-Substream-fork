@@ -8,17 +8,17 @@ name = "substreams"
 crate-type = ["cdylib"]
 
 [dependencies]
-ethabi = "17"
-hex-literal = "0.3.4"
+ethabi = "18"
+hex-literal = "0.4.1"
 num-bigint = "0.4"
 num-traits = "0.2.15"
-prost = "0.11"
-prost-types = "0.11"
+prost = "0.12.6"
+prost-types = "0.12.6"
 substreams = "0.5"
 substreams-ethereum = "0.9"
 substreams-database-change = "1"
 hex = "0.4.3"
-bitcoin = "0.31.0"
+bitcoin = "0.32.0"
 anyhow = "1"
 http = "1.0.0"
 serde = { version = "1.0.196", features = ["derive"] }
@@ -32,6 +32,7 @@ getrandom = { version = "0.2", features = ["custom"] }
 anyhow = "1"
 substreams-ethereum = "0.9"
 regex = "1.8"
+prost-build = "0.12.6"
 
 [profile.release]
 lto = true

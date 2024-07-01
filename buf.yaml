@@ -1,0 +1,12 @@
+version: v2
+name: buf.build/your-username/your-repo
+deps:
+  - buf.build/google/protobuf
+modules:
+  - path: proto
+lint:
+  use:
+    - DEFAULT
+breaking:
+  use:
+    - FILE
