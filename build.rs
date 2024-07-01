@@ -1,25 +1,31 @@
 use anyhow::{Ok, Result};
-use regex::Regex;
-use std::fs;
-use std::fs::File;
-use std::io::Write;
-use substreams_ethereum::Abigen;
+use std::process::Command;
 
 fn main() -> Result<(), anyhow::Error> {
-    // let contents = fs::read_to_string("abi/contract.abi.json")
-    //     .expect("Should have been able to read the file");
+    let proto_files = [
+        "proto/bitcoin.proto",
+        // Add other proto files if needed
+    ];
 
-    // sanitize fields and attributes starting with an underscore
-    // let regex = Regex::new(r#"("\w+"\s?:\s?")_(\w+")"#).unwrap();
-    // let sanitized_abi_file = regex.replace_all(contents.as_str(), "${1}u_${2}");
+    let _proto_include = ["proto"]; // Prefix with underscore to avoid warning
 
-    // do not modify the original abi
-    // let mut file = File::create("/tmp/contract.abi.json")?;
-    // file.write_all(sanitized_abi_file.as_bytes())?;
+    // Use npx buf to compile protobuf files
+    let output = Command::new("cmd")
+        .args(&["/C", "npx buf generate --template buf.gen.yaml"])
+        .output()
+        .expect("Failed to execute npx buf");
 
-    // Abigen::new("Contract", "/tmp/contract.abi.json")?
-    //     .generate()?
-    //     .write_to_file("src/abi/contract.rs")?;
+    if !output.status.success() {
+        panic!(
+            "npx buf generate failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    // Re-run the build script if any of the proto files change
+    for proto in &proto_files {
+        println!("cargo:rerun-if-changed={}", proto);
+    }
 
     Ok(())
 }

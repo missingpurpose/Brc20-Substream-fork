@@ -33,6 +33,7 @@ getrandom = { version = "0.2", features = ["custom"] }
 anyhow = "1"
 substreams-ethereum = "0.9"
 regex = "1.8"
+prost-build = "0.11"  # Add this line
 
 [profile.release]
 lto = true

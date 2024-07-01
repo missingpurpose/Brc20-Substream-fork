@@ -19,3 +19,9 @@ pub mod sf {
         }
     }
 }
+pub mod bitcoin {
+    pub mod v1 {
+        include!("bitcoin.v1.rs");
+        // @@protoc_insertion_point(bitcoin.v1)
+    }
+}

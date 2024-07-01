@@ -1,352 +1,91 @@
-mod brc20;
 mod btc_utils;
-mod ord;
 mod pb;
 mod tables_utils;
 
+use std::collections::HashSet;
 use std::str::FromStr;
 
 use anyhow::Result;
-use brc20::Brc20Event;
 use btc_utils::{btc_to_sats, parse_inscriptions};
-use pb::btc::brc20::v1::{
-    Brc20Events, Deploy, ExecutedTransfer, InscribedTransfer, InscribedTransferLocation, Mint,
-    Token,
-};
+use pb::bitcoin::v1::{CapTable, CapTableEntry}; // Updated path
 use pb::sf::bitcoin::r#type::v1 as btc;
 use substreams::pb::substreams::store_delta::Operation;
 use substreams::pb::substreams::Clock;
 use substreams::scalar::BigInt;
-use substreams::store::{
-    DeltaBigInt, Deltas, StoreAdd, StoreAddBigInt, StoreGet, StoreGetProto, StoreNew, StoreSet,
-    StoreSetProto,
-};
+use substreams::store::{DeltaBigInt, Deltas, StoreAddBigInt, StoreGetProto, StoreSetProto, StoreNew}; // Added StoreNew
 use substreams_entity_change::pb::entity::EntityChanges;
 use substreams_entity_change::tables::Tables;
 
-struct Location {
-    pub utxo: String,
-    pub offset: u64,
-    pub utxo_amount: u64,
+struct AddressEntry {
+    pub address: String,
+    pub balance: u64,
+}
+
+fn parse_query_params() -> HashSet<String> {
+    // This function should parse the query parameters and return a set of addresses
+    // For example, you can use environment variables or other means to get the query parameters
+    // Here, we use a placeholder implementation
+    let addresses = std::env::var("ADDRESSES").unwrap_or_default();
+    addresses.split(',').map(|s| s.to_string()).collect()
 }
 
 #[substreams::handlers::map]
-fn map_brc20_events(block: btc::Block) -> Result<Brc20Events, substreams::errors::Error> {
-    let events = block
+fn map_cap_table(block: btc::Block) -> Result<CapTable, substreams::errors::Error> {
+    let query_addresses = parse_query_params();
+    let entries = block
         .tx
         .into_iter()
-        // Filter if tx data contains "text/plain" or "application/json" hex string for efficiency
-        .filter(|tx| {
-            tx.hex
-                .contains("746578742f706c61696e") // "text/plain"
-            || tx.hex
-            .contains("6170706C69636174696F6E2F6A736F6E") // "application/json"
-        })
         .flat_map(|tx| {
-            let txid = tx.txid.clone();
-            match parse_inscriptions(&tx) {
-                Ok(inscriptions) => inscriptions
-                    .into_iter()
-                    .enumerate()
-                    .filter(|(_, inscription)| {
-                        // substreams::log::info!("Parsing inscription {txid}: {:?}", String::from_utf8(inscription.body().unwrap_or_default().to_vec()));
-                        match inscription
-                            .content_type()
-                            .map(|ctype| ctype.split(";"))
-                            .and_then(|mut parts| parts.next())
-                        {
-                            Some(content_type) => {
-                                content_type == "text/plain" || content_type == "application/json"
-                            }
-                            None => false,
-                        }
-                    })
-                    .filter_map(|(i, inscription)| {
-                        let (vout, offset) = tx.nth_sat_utxo(inscription.pointer().unwrap_or(0))?;
-                        Some((
-                            Location {
-                                utxo: format!("{}:{}", tx.txid, offset),
-                                offset,
-                                utxo_amount: btc_to_sats(vout.value),
-                            },
-                            format!("{}i{}", tx.txid, i),
-                            vout.address(),
-                            inscription,
-                        ))
-                    })
-                    .collect(),
-                Err(err) => {
-                    substreams::log::info!("Error parsing inscriptions in tx {}: {}", txid, err);
-                    vec![]
-                }
-            }
-        })
-        .filter_map(|(location, inscription_id, address, inscription)| {
-            let content = if let Ok(content) =
-                String::from_utf8(inscription.body().unwrap_or_default().to_vec())
-            {
-                content
-            } else {
-                return None;
-            };
-
-            match serde_json::from_str::<Brc20Event>(&content) {
-                Ok(event) if event.valid() => Some((location, inscription_id, address, event)),
-                Ok(_) => None,
-                Err(err) => {
-                    substreams::log::info!(
-                        "Error parsing inscription content {}: {}",
-                        location.utxo,
-                        err
-                    );
+            tx.vout.into_iter().filter_map(|vout| {
+                let address = vout.address()?;
+                if query_addresses.contains(&address) {
+                    let balance = btc_to_sats(vout.value);
+                    Some(AddressEntry { address, balance })
+                } else {
                     None
                 }
-            }
+            })
         })
         .collect::<Vec<_>>();
 
-    Ok(Brc20Events {
-        deploys: events
-            .iter()
-            .filter_map(
-                |(_, inscription_id, address, event)| match (address, event) {
-                    (Some(address), Brc20Event::Deploy(deploy)) => Some(Deploy {
-                        id: format!("{}:DEPLOY:{}", deploy.tick(), inscription_id),
-                        symbol: deploy.tick(),
-                        max_supply: deploy.max.to_string(),
-                        mint_limit: deploy.lim().to_string(),
-                        decimals: deploy.dec(),
-                        deployer: address.clone(),
-                    }),
-                    _ => None,
-                },
-            )
+    Ok(CapTable {
+        entries: entries
+            .into_iter()
+            .map(|entry| CapTableEntry {
+                address: entry.address,
+                balance: entry.balance.to_string(),
+            })
             .collect(),
-        mints: events
-            .iter()
-            .filter_map(
-                |(_, inscription_id, address, event)| match (address, event) {
-                    (Some(address), Brc20Event::Mint(mint)) => Some(Mint {
-                        id: format!("{}:MINT:{}", mint.tick(), inscription_id),
-                        token: mint.tick(),
-                        to: address.into(),
-                        amount: mint.amt.to_string(),
-                    }),
-                    _ => None,
-                },
-            )
-            .collect(),
-        inscribed_transfers: events
-            .iter()
-            .filter_map(
-                |(location, inscription_id, address, event)| match (address, event) {
-                    (Some(address), Brc20Event::Transfer(transfer)) => Some(InscribedTransfer {
-                        id: format!("{}:TRANSFER:{}", transfer.tick(), inscription_id),
-                        token: transfer.tick(),
-                        // to: "".into(),
-                        from: address.into(),
-                        amount: transfer.amt.to_string(),
-                        utxo: location.utxo.clone(),
-                        offset: location.offset,
-                        utxo_amount: location.utxo_amount,
-                    }),
-                    _ => None,
-                },
-            )
-            .collect(),
-        executed_transfers: vec![],
     })
 }
 
 #[substreams::handlers::store]
-fn store_inscribed_transfers(events: Brc20Events, store: StoreSetProto<InscribedTransferLocation>) {
-    events.inscribed_transfers.iter().for_each(|transfer| {
+fn store_cap_table(entries: CapTable, store: StoreSetProto<CapTableEntry>) {
+    entries.entries.iter().for_each(|entry| {
         store.set(
             0,
-            transfer.utxo.clone(),
-            &InscribedTransferLocation {
-                id: transfer.id.clone(),
-                token: transfer.token.clone(),
-                from: transfer.from.clone(),
-                amount: transfer.amount.clone(),
-                offset: transfer.offset.clone(),
-                utxo_amount: transfer.utxo_amount.clone(),
+            entry.address.clone(),
+            &CapTableEntry {
+                address: entry.address.clone(),
+                balance: entry.balance.clone(),
             },
         );
     });
-}
-
-#[substreams::handlers::store]
-fn store_tokens(events: Brc20Events, store: StoreSetProto<Token>) {
-    events.deploys.iter().for_each(|deploy| {
-        store.set(
-            0,
-            deploy.symbol.clone(),
-            &Token {
-                id: deploy.id.clone(),
-                symbol: deploy.symbol.clone(),
-                max_supply: deploy.max_supply.clone(),
-                mint_limit: deploy.mint_limit.clone(),
-                decimals: deploy.decimals.clone(),
-                deployer: deploy.deployer.clone(),
-            },
-        );
-    });
-}
-
-#[substreams::handlers::store]
-fn store_balances(events: Brc20Events, store: StoreAddBigInt) {
-    // On mints, we add the amount to the receiver's balance
-    events.mints.iter().for_each(|mint| {
-        store.add(
-            0,
-            format!("{}:{}", mint.token, mint.to),
-            BigInt::from_str(&mint.amount).expect("Amount should be valid integer"),
-        );
-    });
-
-    // On inscribed transfers, we subtract the amount from the sender's balance.
-    // Note: The sender's transferable balance is increased in the
-    // `store_transferable_balance` store module
-    events.inscribed_transfers.iter().for_each(|transfer| {
-        store.add(
-            0,
-            format!("{}:{}", transfer.token, transfer.from),
-            BigInt::from_str(&transfer.amount)
-                .expect("Amount should be valid integer")
-                .neg(),
-        );
-    });
-
-    // On executed transfers, we add the amount to the receiver's balance
-    events.executed_transfers.iter().for_each(|transfer| {
-        store.add(
-            0,
-            format!("{}:{}", transfer.token, transfer.to),
-            BigInt::from_str(&transfer.amount).expect("Amount should be valid integer"),
-        );
-    });
-}
-
-#[substreams::handlers::store]
-fn store_transferable_balances(events: Brc20Events, store: StoreAddBigInt) {
-    // On inscribed transfers, we add the amount to the sender's transferable balance
-    events.inscribed_transfers.iter().for_each(|transfer| {
-        store.add(
-            0,
-            format!("{}:{}", transfer.token, transfer.from),
-            BigInt::from_str(&transfer.amount).expect("Amount should be valid integer"),
-        );
-    });
-
-    // On executed transfers, we subtract the amount from the sender's transferable balance
-    events.executed_transfers.iter().for_each(|transfer| {
-        store.add(
-            0,
-            format!("{}:{}", transfer.token, transfer.from),
-            BigInt::from_str(&transfer.amount)
-                .expect("Amount should be valid integer")
-                .neg(),
-        );
-    });
-}
-
-#[substreams::handlers::map]
-fn map_resolve_transfers(
-    block: btc::Block,
-    events: Brc20Events,
-    transfer_store: StoreGetProto<InscribedTransferLocation>,
-    token_store: StoreGetProto<Token>,
-) -> Result<Brc20Events, substreams::errors::Error> {
-    let executed_transfers =
-        block
-            .tx
-            .into_iter()
-            .filter_map(|tx| {
-                // Note: Without tracking UTXO values, we can only reliably resolve transfers where the
-                // inscribed sat is held by the first input UTXO of the transaction
-                if let Some(inscribed_transfer_loc) =
-                    transfer_store.get_at(0, format!("{}:{}", tx.vin[0].txid, tx.vin[0].vout))
-                {
-                    let (vout, _) = tx.nth_sat_utxo(inscribed_transfer_loc.offset)?;
-                    Some(ExecutedTransfer {
-                        id: inscribed_transfer_loc.id,
-                        token: inscribed_transfer_loc.token,
-                        from: inscribed_transfer_loc.from,
-                        to: vout.address()?,
-                        amount: inscribed_transfer_loc.amount,
-                    })
-                } else {
-                    // Log that we could not resolve transfer
-                    if let Some(inscribed_transfer_loc) = tx.vin.iter().find_map(|vin| {
-                        transfer_store.get_at(0, format!("{}:{}", vin.txid, vin.vout))
-                    }) {
-                        substreams::log::info!(
-                            "Could not resolve inscribed transfer {}",
-                            inscribed_transfer_loc.id
-                        );
-                    }
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
-
-    Ok(Brc20Events {
-        executed_transfers,
-        mints: events
-            .mints
-            .into_iter()
-            .filter(|mint| match token_store.get_at(0, mint.token.clone()) {
-                Some(token) => {
-                    BigInt::from_str(&mint.amount).unwrap()
-                        < BigInt::from_str(&token.mint_limit).unwrap()
-                }
-                None => false,
-            })
-            .collect(),
-        ..events
-    })
 }
 
 #[substreams::handlers::map]
 fn graph_out(
     clock: Clock,
-    events: Brc20Events,
+    cap_table: CapTable,
     balances_store: Deltas<DeltaBigInt>,
-    transferable_balances_store: Deltas<DeltaBigInt>,
 ) -> Result<EntityChanges, substreams::errors::Error> {
     let mut tables = Tables::new();
 
-    events.deploys.iter().for_each(|deploy| {
+    cap_table.entries.iter().for_each(|entry| {
         tables
-            .create_row("Deploy", deploy.id.clone())
-            .set("token", deploy.symbol.clone())
-            .set("deployer", deploy.deployer.clone())
-            .set("block", clock.number.clone())
-            .set(
-                "timestamp",
-                clock
-                    .timestamp
-                    .as_ref()
-                    .map(|t| t.seconds)
-                    .unwrap_or_default(),
-            );
-
-        tables
-            .create_row("Token", deploy.symbol.clone())
-            .set("symbol", deploy.symbol.clone())
-            .set_bigint("max_supply", &deploy.max_supply)
-            .set_bigint("mint_limit", &deploy.mint_limit)
-            .set("decimals", deploy.decimals.clone())
-            .set("deployment", deploy.id.clone());
-    });
-
-    events.mints.iter().for_each(|mint| {
-        tables
-            .create_row("Mint", mint.id.clone())
-            .set("token", mint.token.clone())
-            .set("to", mint.to.clone())
-            .set_bigint("amount", &mint.amount)
+            .create_row("CapTableEntry", entry.address.clone())
+            .set("address", entry.address.clone())
+            .set_bigint("balance", &entry.balance)
             .set("block", clock.number.clone())
             .set(
                 "timestamp",
@@ -358,67 +97,19 @@ fn graph_out(
             );
     });
 
-    events.executed_transfers.iter().for_each(|transfer| {
-        tables
-            .create_row("Transfer", transfer.id.clone())
-            .set("token", transfer.token.clone())
-            .set("from", transfer.from.clone())
-            .set("to", transfer.to.clone())
-            .set_bigint("amount", &transfer.amount)
-            .set("block", clock.number.clone())
-            .set(
-                "timestamp",
-                clock
-                    .timestamp
-                    .as_ref()
-                    .map(|t| t.seconds)
-                    .unwrap_or_default(),
-            );
-    });
-
-    balances_store
-        .deltas
-        .iter()
-        .for_each(|delta| match delta.operation {
-            Operation::Create => {
-                let (token, account) = {
-                    let mut parts = delta.key.split(':');
-                    (
-                        parts
-                            .next()
-                            .expect("Balance store key should be `{SYMBOL}:{ACCOUNT}`"),
-                        parts
-                            .next()
-                            .expect("Balance store key should be `{SYMBOL}:{ACCOUNT}`"),
-                    )
-                };
-
-                tables
-                    .create_row("AccountBalance", delta.key.clone())
-                    .set("account", account.to_string())
-                    .set("token", token.to_string())
-                    .set_bigint("balance", &delta.new_value.to_string())
-                    .set_bigint("transferable", &"0".into());
-
-                tables.create_row("Account", account);
-            }
-            Operation::Update => {
-                tables
-                    .update_row("AccountBalance", delta.key.clone())
-                    .set_bigint("balance", &delta.new_value.to_string());
-            }
-            _ => (),
-        });
-
-    transferable_balances_store.deltas.iter().for_each(|delta| {
-        // Note: No need to check operation since the AccountBalance row should have been created
-        // when the `balances_store` had a `Create` operation for the same key.
-        // This is because an account can only have a transferable balance if it has a balance
-        // in the first place, which is created when the account is the recipient of either a Mint
-        // or a Transfer event.
-        tables
-            .update_row("AccountBalance", delta.key.clone())
-            .set_bigint("transferable", &delta.new_value.to_string());
+    balances_store.deltas.iter().for_each(|delta| match delta.operation {
+        Operation::Create => {
+            tables
+                .create_row("CapTableEntry", delta.key.clone())
+                .set("address", delta.key.clone())
+                .set_bigint("balance", &delta.new_value.to_string());
+        }
+        Operation::Update => {
+            tables
+                .update_row("CapTableEntry", delta.key.clone())
+                .set_bigint("balance", &delta.new_value.to_string());
+        }
+        _ => (),
     });
 
     Ok(tables.to_entity_changes())

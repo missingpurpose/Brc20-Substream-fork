@@ -123,6 +123,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "prost",
+ "prost-build",
  "prost-types",
  "regex",
  "serde",

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package bitcoin.v1;
+
+message BitcoinTransaction {
+    string txid = 1;
+    repeated string inputs = 2;
+    repeated double outputs = 3;
+}
+
+message BitcoinTransactions {
+    repeated BitcoinTransaction transactions = 1;
+}
+
+message AddressBalance {
+    string address = 1;
+    double balance = 2;
+}
+
+message AddressBalances {
+    repeated AddressBalance balances = 1;
+}
+
+message CapTableEntry {
+    string address = 1;
+    string balance = 2;
+}
+
+message CapTable {
+    repeated CapTableEntry entries = 1;
+}

@@ -1,7 +1,7 @@
 specVersion: v0.1.0
 package:
-  name: brc20_substreams
-  version: v0.1.3
+  name: cap_table_substreams
+  version: v0.1.0
   image: assets/logo.png
 
 imports:
@@ -11,7 +11,7 @@ imports:
 
 protobuf:
   files:
-    - brc20.proto
+    - bitcoin.proto
   importPaths:
     - ./proto
 
@@ -21,75 +21,29 @@ binaries:
     file: ./target/wasm32-unknown-unknown/release/substreams.wasm
 
 modules:
-  - name: map_brc20_events
+  - name: map_cap_table
     kind: map
-    initialBlock: 779830
+    initialBlock: 84965
     inputs:
       - source: sf.bitcoin.type.v1.Block
     output:
-      type: proto:btc.brc20.v1.Brc20Events
+      type: proto:bitcoin.v1.CapTable
 
-  - name: store_inscribed_transfers
+  - name: store_cap_table
     kind: store
-    initialBlock: 779830
+    initialBlock: 84965
     updatePolicy: set
-    valueType: proto:btc.brc20.v1.InscribedTransferLocation
+    valueType: proto:bitcoin.v1.CapTableEntry
     inputs:
-      - map: map_brc20_events
-
-  - name: store_tokens
-    kind: store
-    initialBlock: 779830
-    updatePolicy: set
-    valueType: proto:btc.brc20.v1.Token
-    inputs:
-      - map: map_brc20_events
-
-  - name: map_resolve_transfers
-    kind: map
-    initialBlock: 779830
-    inputs:
-      - source: sf.bitcoin.type.v1.Block
-      - map: map_brc20_events
-      - store: store_inscribed_transfers
-      - store: store_tokens
-    output:
-      type: proto:btc.brc20.v1.Brc20Events
-
-  - name: store_balances
-    kind: store
-    initialBlock: 779830
-    updatePolicy: add
-    valueType: bigint
-    inputs:
-      - map: map_resolve_transfers
-
-  - name: store_transferable_balances
-    kind: store
-    initialBlock: 779830
-    updatePolicy: add
-    valueType: bigint
-    inputs:
-      - map: map_resolve_transfers
+      - map: map_cap_table
 
   - name: graph_out
     kind: map
-    initialBlock: 779830
+    initialBlock: 84965
     inputs:
       - source: sf.substreams.v1.Clock
-      - map: map_resolve_transfers
-      - store: store_balances
-        mode: deltas
-      - store: store_transferable_balances
+      - map: map_cap_table
+      - store: store_cap_table
         mode: deltas
     output:
       type: proto:sf.substreams.entity.v1.EntityChanges
-
-# network: bitcoin
-# sink:
-#   module: graph_out
-#   type: sf.substreams.sink.subgraph.v1.Service
-#   config:
-#     schema: "./schema.graphql"
-#     subgraph_yaml: "./subgraph.yaml"
-#     postgres_direct_protocol_access: true
