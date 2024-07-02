@@ -29,3 +29,7 @@ message BitcoinCapTableEntry {  // Renamed to avoid conflict
 message CapTable {
     repeated BitcoinCapTableEntry entries = 1;
 }
+
+message Addresses {
+    repeated string addresses = 1;
+}

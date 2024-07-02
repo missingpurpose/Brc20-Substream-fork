@@ -1,3 +1,8 @@
 type Query {
     addressBalances(addresses: [String!]!): [AddressBalance!]!
 }
+
+type AddressBalance {
+    address: String!
+    balance: BigInt!
+}

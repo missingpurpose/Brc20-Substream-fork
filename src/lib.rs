@@ -3,16 +3,16 @@ mod address;
 
 use anyhow::Result;
 use address::address_from_scriptpubkey;
-use pb::sf::bitcoin::r#type::v1 as btc;
-use pb::btc::cap_table::v1::{CapTable, CapTableEntry};
+use pb::btc::cap_table::v1::{CapTable, CapTableEntry, Block};
 use std::collections::HashMap;
 use substreams_macro::map; 
+use substreams::errors::Error;
 
-#[map] // procedural macro correct
+#[map]
 fn map_cap_table(
-    block: btc::Block,
+    block: Block,
     addresses: Vec<String>,
-) -> Result<CapTable, substreams::errors::Error> {
+) -> Result<CapTable, Error> {
     let mut cap_table = CapTable { entries: vec![] };
     let mut address_map: HashMap<String, u64> = HashMap::new();
 
@@ -21,8 +21,11 @@ fn map_cap_table(
             if let Some(address) = vout.address() {
                 if addresses.contains(&address) {
                     let entry = address_map.entry(address).or_insert(0);
-                    *entry += vout.value as u64; // Convert f64 to u64
+                    *entry += vout.value as u64;
                 }
+            } else {
+                // Log or handle the case where address extraction fails
+                eprintln!("Failed to extract address from vout: {:?}", vout);
             }
         }
     }
@@ -34,11 +37,11 @@ fn map_cap_table(
     Ok(cap_table)
 }
 
-impl btc::Vout {
+impl pb::btc::cap_table::v1::Vout {
     pub fn address(&self) -> Option<String> {
         self.script_pub_key
             .as_ref()
-            .map(|script_pub_key| hex::encode(script_pub_key.as_bytes()))  // Convert to bytes
+            .map(|script_pub_key| hex::encode(script_pub_key.as_bytes()))
             .and_then(|script_pub_key_hex| address_from_scriptpubkey(&script_pub_key_hex))
     }
 }
