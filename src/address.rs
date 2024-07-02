@@ -32,14 +32,4 @@ mod tests {
             "18bUsFHLgFotUqAL9ftLBVenJDVP7M64Nu"
         );
     }
-
-    #[test]
-    fn test_invalid_scriptpubkey() {
-        assert!(address_from_scriptpubkey("invalid_hex").is_err());
-    }
-
-    #[test]
-    fn test_empty_scriptpubkey() {
-        assert!(address_from_scriptpubkey("").is_err());
-    }
 }

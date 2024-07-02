@@ -2,7 +2,6 @@ mod pb;
 mod address;
 
 use anyhow::Result;
-use address::address_from_scriptpubkey;
 use pb::btc::cap_table::v1::{CapTable, CapTableEntry, Block};
 use std::collections::{HashMap, HashSet};
 use substreams_macro::map; 
@@ -12,7 +11,7 @@ use log::error;
 #[map]
 fn map_cap_table(
     block: Block,
-    addresses: Vec<String>,
+    addresses: Vec<String>,  // Assume these are public addresses now
 ) -> Result<CapTable, Error> {
     let mut cap_table = CapTable { entries: vec![] };
     let mut address_map: HashMap<String, u64> = HashMap::new();
@@ -21,7 +20,7 @@ fn map_cap_table(
     for tx in block.tx {
         for vout in tx.vout {
             if let Some(address) = vout.address() {
-                if address_set.contains(&address) {
+                if address_set.contains(&address)) {
                     let entry = address_map.entry(address).or_insert(0);
                     *entry += vout.value as u64;
                 }
@@ -43,7 +42,6 @@ impl pb::btc::cap_table::v1::Vout {
     pub fn address(&self) -> Option<String> {
         self.script_pub_key
             .as_ref()
-            .map(|script_pub_key| hex::encode(script_pub_key.as_bytes()))
-            .and_then(|script_pub_key_hex| address_from_scriptpubkey(&script_pub_key_hex).ok())
+            .and_then(|script_pub_key| address_from_script(&Script::from(script_pub_key.as_slice())))
     }
 }

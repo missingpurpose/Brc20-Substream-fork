@@ -1,7 +1,4 @@
-use crate::{
-    ord::{envelope::ParsedEnvelope, inscription::Inscription},
-    pb::sf::bitcoin::r#type::v1 as btc,
-};
+use crate::pb::sf::bitcoin::r#type::v1 as btc;
 use anyhow::Result;
 use bitcoin::{
     address::Address, blockdata::script::Script, consensus::deserialize, hashes::hex::FromHex,
@@ -38,29 +35,10 @@ pub fn block_supply(height: u64) -> u64 {
 // ================================================================
 // Address utils
 // ================================================================
-pub fn address_from_scriptpubkey(script_pub_key_hex: &str) -> Option<String> {
-    // Decode the script from hex
-    let hex_data = hex::decode(script_pub_key_hex).expect("Valid hex script");
-    let script = Script::from_bytes(&hex_data);
-
-    // Create a Bitcoin address from the public key script
+pub fn address_from_script(script: &Script) -> Option<String> {
     Address::from_script(script, Network::Bitcoin)
         .map(|address| address.to_string())
         .ok()
-}
-
-// ================================================================
-// Inscriptions utils
-// ================================================================
-pub fn parse_inscriptions(tx: &btc::Transaction) -> Result<Vec<Inscription>> {
-    let raw_trx = Vec::from_hex(&tx.hex).unwrap();
-    let tx_: Transaction = deserialize(&raw_trx).unwrap();
-    let envelopes = ParsedEnvelope::from_transaction(&tx_);
-
-    Ok(envelopes
-        .into_iter()
-        .map(|envelope| envelope.payload)
-        .collect())
 }
 
 // ================================================================
@@ -85,7 +63,7 @@ impl btc::Vout {
     pub fn address(&self) -> Option<String> {
         self.script_pub_key
             .as_ref()
-            .and_then(|script_pub_key| address_from_scriptpubkey(&script_pub_key.hex))
+            .and_then(|script_pub_key| address_from_script(&Script::from(script_pub_key.as_slice())))
     }
 }
 
@@ -140,9 +118,12 @@ mod tests {
     }
 
     #[test]
-    fn test_address_from_scriptpubkey() {
+    fn test_address_from_script() {
+        let script_pub_key_hex = "76a914534e48e9a49ce7ebf8d84c8313e4edfa48852fa188ac";
+        let hex_data = hex::decode(script_pub_key_hex).expect("Valid hex script");
+        let script = Script::from(hex_data.as_slice());
         assert_eq!(
-            address_from_scriptpubkey("76a914534e48e9a49ce7ebf8d84c8313e4edfa48852fa188ac"),
+            address_from_script(&script),
             Some("18bUsFHLgFotUqAL9ftLBVenJDVP7M64Nu".into())
         )
     }
