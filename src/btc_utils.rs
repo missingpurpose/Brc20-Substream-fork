@@ -1,19 +1,10 @@
-use crate::pb::sf::bitcoin::r#type::v1 as btc;
-use anyhow::Result;
-use bitcoin::{
-    address::Address, blockdata::script::Script, consensus::deserialize, hashes::hex::FromHex,
-    network::Network, Transaction,
-};
+use std::collections::HashMap;
 
-// ================================================================
-// Sat utils
-// ================================================================
 pub fn btc_to_sats(btc_amount: f64) -> u64 {
     let s = format!("{:.8}", btc_amount);
     s.replace(".", "").parse::<u64>().unwrap()
 }
 
-// From https://github.com/ordinals/ord/blob/master/bip.mediawiki
 pub fn subsidy(height: u64) -> u64 {
     50 * 100_000_000 >> (height / 210_000)
 }
@@ -32,20 +23,11 @@ pub fn block_supply(height: u64) -> u64 {
     supply
 }
 
-// ================================================================
-// Address utils
-// ================================================================
-pub fn address_from_script(script: &Script) -> Option<String> {
-    Address::from_script(script, Network::Bitcoin)
-        .map(|address| address.to_string())
-        .ok()
+pub fn get_balance_for_address(address: &str, address_balances: &HashMap<String, u64>) -> Option<u64> {
+    address_balances.get(address).cloned()
 }
 
-// ================================================================
-// BTC protobuf models utils
-// ================================================================
 impl btc::Transaction {
-    /// Returns the nth satoshi UTXO in the transaction along with its offset within the UTXO.
     pub fn nth_sat_utxo(&self, offset: u64) -> Option<(btc::Vout, u64)> {
         let mut sat = 0;
         for (idx, output) in self.vout.iter().enumerate() {
@@ -56,14 +38,6 @@ impl btc::Transaction {
             sat += utxo_sats;
         }
         None
-    }
-}
-
-impl btc::Vout {
-    pub fn address(&self) -> Option<String> {
-        self.script_pub_key
-            .as_ref()
-            .and_then(|script_pub_key| address_from_script(&Script::from(script_pub_key.as_slice())))
     }
 }
 
@@ -118,13 +92,13 @@ mod tests {
     }
 
     #[test]
-    fn test_address_from_script() {
-        let script_pub_key_hex = "76a914534e48e9a49ce7ebf8d84c8313e4edfa48852fa188ac";
-        let hex_data = hex::decode(script_pub_key_hex).expect("Valid hex script");
-        let script = Script::from(hex_data.as_slice());
-        assert_eq!(
-            address_from_script(&script),
-            Some("18bUsFHLgFotUqAL9ftLBVenJDVP7M64Nu".into())
-        )
+    fn test_get_balance_for_address() {
+        let mut address_balances = HashMap::new();
+        address_balances.insert("address1".to_string(), 1000);
+        address_balances.insert("address2".to_string(), 2000);
+
+        assert_eq!(get_balance_for_address("address1", &address_balances), Some(1000));
+        assert_eq!(get_balance_for_address("address2", &address_balances), Some(2000));
+        assert_eq!(get_balance_for_address("address3", &address_balances), None);
     }
 }

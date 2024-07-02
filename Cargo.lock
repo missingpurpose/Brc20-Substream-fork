@@ -148,6 +148,7 @@ dependencies = [
  "hex",
  "hex-literal 0.4.1",
  "http",
+ "log",
  "num-bigint",
  "num-traits",
  "prost 0.12.6",

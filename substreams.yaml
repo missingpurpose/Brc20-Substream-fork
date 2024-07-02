@@ -48,3 +48,13 @@ modules:
         mode: deltas
     output:
       type: proto:sf.substreams.entity.v1.EntityChanges
+
+  - name: map_address_list
+    kind: map
+    initialBlock: 84965
+    inputs:
+      - source: sf.substreams.v1.Clock
+      - store: store_cap_table
+        mode: deltas
+    output:
+      type: proto:bitcoin.v1.AddressList

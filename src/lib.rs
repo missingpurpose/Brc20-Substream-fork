@@ -1,47 +1,22 @@
-mod pb;
-mod address;
+mod btc_utils;
 
-use anyhow::Result;
-use pb::btc::cap_table::v1::{CapTable, CapTableEntry, Block};
-use std::collections::{HashMap, HashSet};
-use substreams_macro::map; 
-use substreams::errors::Error;
-use log::error;
+use substreams::pb::btc::cap_table::v1::{Block, CapTable, CapTableEntry};
+use crate::btc_utils::get_balance_for_address;
+use std::collections::HashMap;
 
-#[map]
-fn map_cap_table(
-    block: Block,
-    addresses: Vec<String>,  // Assume these are public addresses now
-) -> Result<CapTable, Error> {
-    let mut cap_table = CapTable { entries: vec![] };
-    let mut address_map: HashMap<String, u64> = HashMap::new();
-    let address_set: HashSet<String> = addresses.into_iter().collect();
+pub fn generate_cap_table(addresses: Vec<String>, address_balances: &HashMap<String, u64>) -> CapTable {
+    let mut cap_table_map: HashMap<String, u64> = HashMap::new();
 
-    for tx in block.tx {
-        for vout in tx.vout {
-            if let Some(address) = vout.address() {
-                if address_set.contains(&address)) {
-                    let entry = address_map.entry(address).or_insert(0);
-                    *entry += vout.value as u64;
-                }
-            } else {
-                // Log or handle the case where address extraction fails
-                error!("Failed to extract address from vout: {:?}", vout);
-            }
+    for address in addresses {
+        if let Some(balance) = get_balance_for_address(&address, address_balances) {
+            cap_table_map.insert(address, balance);
         }
     }
 
-    for (address, amount) in address_map {
-        cap_table.entries.push(CapTableEntry { address, amount });
-    }
+    let entries = cap_table_map
+        .into_iter()
+        .map(|(address, amount)| CapTableEntry { address, amount })
+        .collect();
 
-    Ok(cap_table)
-}
-
-impl pb::btc::cap_table::v1::Vout {
-    pub fn address(&self) -> Option<String> {
-        self.script_pub_key
-            .as_ref()
-            .and_then(|script_pub_key| address_from_script(&Script::from(script_pub_key.as_slice())))
-    }
+    CapTable { entries }
 }
