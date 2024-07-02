@@ -12,6 +12,7 @@ imports:
 protobuf:
   files:
     - bitcoin.proto
+    - cap_table.proto
   importPaths:
     - ./proto
 

@@ -1,5 +1,5 @@
 specVersion: 0.0.6
-description: BRC20 events and balances subgraph
+description: bitcoin cap table events and balances subgraph
 repository: https://github.com/missingpurpose/Brc20-Substream-fork
 schema:
   file: ./schema.graphql

@@ -1,17 +1,12 @@
-use bitcoin::blockdata::script::Script;
 use bitcoin::network::constants::Network;
-use bitcoin::util::address::Address;
+use bitcoin::address::Address;
+use bitcoin::Script;
 use hex::FromHex;
 
-pub fn address_from_scriptpubkey(script_pub_key_hex: &str) -> Option<String> {
-    // Decode the script from hex
-    let hex_data = hex::decode(script_pub_key_hex).expect("Valid hex script");
-    let script = Script::from(hex_data);
-
-    // Create a Bitcoin address from the public key script
-    Address::from_script(&script, Network::Bitcoin)
-        .map(|address| address.to_string())
-        .ok()
+pub fn address_from_scriptpubkey(script_pubkey: &str) -> Option<String> {
+    let hex_data = Vec::from_hex(script_pubkey).ok()?;
+    let script = Script::from(hex_data.as_slice());
+    Address::from_script(&script, Network::Bitcoin).map(|addr| addr.to_string())
 }
 
 #[cfg(test)]

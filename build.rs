@@ -1,7 +1,11 @@
 use anyhow::{Ok, Result};
 use prost_build::Config;
+use std::env;
 
 fn main() -> Result<(), anyhow::Error> {
+    // Set the PROTOC environment variable to the path of the protoc binary
+    env::set_var("PROTOC", "C:\\protoc\\bin\\protoc.exe");
+
     let proto_files = [
         "proto/bitcoin.proto",
         "proto/cap_table.proto",
