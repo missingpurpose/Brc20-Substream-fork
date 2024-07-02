@@ -21,11 +21,11 @@ message AddressBalances {
     repeated AddressBalance balances = 1;
 }
 
-message CapTableEntry {
+message BitcoinCapTableEntry {  // Renamed to avoid conflict
     string address = 1;
     string balance = 2;
 }
 
 message CapTable {
-    repeated CapTableEntry entries = 1;
+    repeated BitcoinCapTableEntry entries = 1;
 }

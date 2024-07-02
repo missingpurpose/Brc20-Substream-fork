@@ -8,10 +8,6 @@ pub mod btc {
         }
     }
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> 0e6ab0d1b3e5365ae7cc9595fd97694521c5461e
 pub mod sf {
     pub mod bitcoin {
         pub mod r#type {
@@ -22,13 +18,10 @@ pub mod sf {
             }
         }
     }
-<<<<<<< HEAD
-=======
 }
 pub mod bitcoin {
     pub mod v1 {
         include!("bitcoin.v1.rs");
         // @@protoc_insertion_point(bitcoin.v1)
     }
->>>>>>> 0e6ab0d1b3e5365ae7cc9595fd97694521c5461e
 }

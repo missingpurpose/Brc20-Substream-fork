@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-extern crate prost_build;
-
-fn main() {
-    prost_build::compile_protos(
-        &["proto/cap_table.proto"],
-        &["proto"],
-    ).unwrap();
-=======
 use anyhow::{Ok, Result};
 use std::process::Command;
 
@@ -37,5 +28,4 @@ fn main() -> Result<(), anyhow::Error> {
     }
 
     Ok(())
->>>>>>> 0e6ab0d1b3e5365ae7cc9595fd97694521c5461e
 }
