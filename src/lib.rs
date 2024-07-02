@@ -4,9 +4,10 @@ mod address;
 use anyhow::Result;
 use address::address_from_scriptpubkey;
 use pb::btc::cap_table::v1::{CapTable, CapTableEntry, Block};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use substreams_macro::map; 
 use substreams::errors::Error;
+use log::error;
 
 #[map]
 fn map_cap_table(
@@ -15,17 +16,18 @@ fn map_cap_table(
 ) -> Result<CapTable, Error> {
     let mut cap_table = CapTable { entries: vec![] };
     let mut address_map: HashMap<String, u64> = HashMap::new();
+    let address_set: HashSet<String> = addresses.into_iter().collect();
 
     for tx in block.tx {
         for vout in tx.vout {
             if let Some(address) = vout.address() {
-                if addresses.contains(&address) {
+                if address_set.contains(&address) {
                     let entry = address_map.entry(address).or_insert(0);
                     *entry += vout.value as u64;
                 }
             } else {
                 // Log or handle the case where address extraction fails
-                eprintln!("Failed to extract address from vout: {:?}", vout);
+                error!("Failed to extract address from vout: {:?}", vout);
             }
         }
     }
@@ -42,6 +44,6 @@ impl pb::btc::cap_table::v1::Vout {
         self.script_pub_key
             .as_ref()
             .map(|script_pub_key| hex::encode(script_pub_key.as_bytes()))
-            .and_then(|script_pub_key_hex| address_from_scriptpubkey(&script_pub_key_hex))
+            .and_then(|script_pub_key_hex| address_from_scriptpubkey(&script_pub_key_hex).ok())
     }
 }
