@@ -1,8 +1,7 @@
-use bitcoin::{
-    blockdata::script::Script,
-    network::constants::Network,
-    address::Address,
-};
+use bitcoin::blockdata::script::Script;
+use bitcoin::network::constants::Network;
+use bitcoin::util::address::Address;
+use hex::FromHex;
 
 pub fn address_from_scriptpubkey(script_pub_key_hex: &str) -> Option<String> {
     // Decode the script from hex

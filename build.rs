@@ -1,26 +1,20 @@
 use anyhow::{Ok, Result};
-use std::process::Command;
+use prost_build::Config;
 
 fn main() -> Result<(), anyhow::Error> {
     let proto_files = [
         "proto/bitcoin.proto",
-        // Add other proto files if needed
+        "proto/cap_table.proto",
     ];
 
-    let _proto_include = ["proto"]; // Prefix with underscore to avoid warning
+    let proto_include = ["proto"];
 
-    // Use npx buf to compile protobuf files
-    let output = Command::new("cmd")
-        .args(&["/C", "npx buf generate --template buf.gen.yaml"])
-        .output()
-        .expect("Failed to execute npx buf");
+    // Configure prost-build
+    let mut config = Config::new();
+    config.out_dir("src/pb"); // Ensure the output directory is correct
 
-    if !output.status.success() {
-        panic!(
-            "npx buf generate failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-    }
+    // Compile the Protobuf files
+    config.compile_protos(&proto_files, &proto_include)?;
 
     // Re-run the build script if any of the proto files change
     for proto in &proto_files {
