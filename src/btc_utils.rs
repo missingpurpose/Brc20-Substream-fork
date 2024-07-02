@@ -27,19 +27,6 @@ pub fn get_balance_for_address(address: &str, address_balances: &HashMap<String,
     address_balances.get(address).cloned()
 }
 
-impl btc::Transaction {
-    pub fn nth_sat_utxo(&self, offset: u64) -> Option<(btc::Vout, u64)> {
-        let mut sat = 0;
-        for (idx, output) in self.vout.iter().enumerate() {
-            let utxo_sats = btc_to_sats(output.value);
-            if sat + utxo_sats > offset {
-                return Some((self.vout[idx].clone(), offset - sat));
-            }
-            sat += utxo_sats;
-        }
-        None
-    }
-}
 
 #[cfg(test)]
 mod tests {
