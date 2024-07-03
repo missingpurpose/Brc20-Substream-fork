@@ -2,7 +2,7 @@ mod btc_utils;
 mod pb;
 extern crate prost_derive;
 
-use pb::btc::cap_table::v1::{Block, CapTable, CapTableEntry}; // Use the pb module directly
+use pb::btc::cap_table::v1::{CapTable, CapTableEntry}; // Use the pb module directly
 use crate::btc_utils::get_balance_for_address;
 use std::collections::HashMap;
 
