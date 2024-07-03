@@ -6,6 +6,9 @@ fn main() -> Result<(), anyhow::Error> {
     // Set the PROTOC environment variable to the path of the protoc binary
     env::set_var("PROTOC", "C:\\protoc\\bin\\protoc.exe");
 
+    // Set the PROTOC_INCLUDE environment variable to the path of the include directory
+    env::set_var("PROTOC_INCLUDE", "C:\\protoc\\include");
+
     let proto_files = [
         "proto/bitcoin.proto",
         "proto/cap_table.proto",

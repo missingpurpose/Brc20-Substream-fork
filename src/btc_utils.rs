@@ -5,24 +5,6 @@ pub fn btc_to_sats(btc_amount: f64) -> u64 {
     s.replace(".", "").parse::<u64>().unwrap()
 }
 
-pub fn subsidy(height: u64) -> u64 {
-    50 * 100_000_000 >> (height / 210_000)
-}
-
-pub fn block_supply(height: u64) -> u64 {
-    let mut supply = 0;
-
-    for i in 0.. {
-        if height < (i + 1) * 210_000 {
-            supply += (1 + height % 210_000) * subsidy(height);
-            break;
-        } else {
-            supply += 210_000 * subsidy(i * 210_000);
-        }
-    }
-    supply
-}
-
 pub fn get_balance_for_address(address: &str, address_balances: &HashMap<String, u64>) -> Option<u64> {
     address_balances.get(address).cloned()
 }
